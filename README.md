@@ -1,7 +1,9 @@
 Sound field reconstruction in rooms: inpainting meets superresolution
 ====
 
-Deep learning for sound field reconstruction in rooms.
+Deep learning for sound field reconstruction in rooms. 
+
+Testing with complex networks.
 
 [Paper](https://arxiv.org/abs/2001.11263) by Francesc Lluís, Pablo Martínez-Nuevo, Martin Bo Møller, Sven Ewan Shepstone
 
