@@ -3,8 +3,6 @@ Sound field reconstruction in rooms: inpainting meets superresolution
 
 Deep learning for sound field reconstruction in rooms.
 
-Extension with complex networks.
-
 [Paper](https://arxiv.org/abs/2001.11263) by Francesc Lluís, Pablo Martínez-Nuevo, Martin Bo Møller, Sven Ewan Shepstone
 
 We provide an implementation of the deep-learning-based method for sound field reconstruction presented in the aforementioned paper. It uses a limited number of arbitrary discrete measurements of the magnitude of the sound field pressure in order to extrapolate this field to a higher-resolution grid of discrete points in space with a low computational complexity. The method is based on a U-net-like neural network with partial convolutions trained solely on simulated data, i.e. the dataset is constructed from numerical simulations of the Green's function across thousands of common rectangular rooms. Although extensible to three dimensions, the method focuses on reconstructing a two-dimensional plane of the room from measurements of the three-dimensional sound field.
