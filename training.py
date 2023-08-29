@@ -9,6 +9,8 @@ import util
 import data
 import sfun
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+
 def create_new_session(config):
     """ Creates a new folder to save all session artifacts to.
     Args:

@@ -8,6 +8,7 @@ import sfun
 import data
 import copy
 import numpy as np
+import ipdb
 
 sys.path.append('util')
 
@@ -20,7 +21,9 @@ def get_latest_checkpoint_path(session_dir):
         Returns: string
 
     """
+    
     checkpoints_path = os.path.join(session_dir, 'checkpoints')
+    
     if os.path.exists(checkpoints_path) and util.dir_contains_files(checkpoints_path):
         checkpoints = os.listdir(checkpoints_path)
         checkpoints.sort(key=lambda x: os.stat(os.path.join(checkpoints_path, x)).st_mtime)
@@ -72,6 +75,7 @@ def reconstruct_soundfield(model, sf_sample, mask, factor, frequencies, filename
 
     """
 
+    #ipdb.set_trace()
     # Create one sample batch. Expand dims
     sf_sample = np.expand_dims(sf_sample, axis=0)
     sf_gt = copy.deepcopy(sf_sample)
@@ -136,13 +140,14 @@ def real_data_evaluation(config_path):
         config_path: string
 
     """
-
+    
     config = util.load_config(config_path)
     print('Loaded configuration from: %s' % config_path)
-
+  
     session_dir = config_path[:config_path.rfind('/')+1]
 
     checkpoint_path = get_latest_checkpoint_path(session_dir)
+    
     if not checkpoint_path:
         print('Error: No checkpoint found in same directory as configuration file.')
         return
@@ -154,13 +159,11 @@ def real_data_evaluation(config_path):
                                    str(config['evaluation']['step_mics']))
     if not os.path.exists(predict_path): os.makedirs(predict_path)
 
-
     filepath = os.path.join(config['dataset']['path'], 'real_soundfields','RoomB_soundfield.mat')
 
     # Get Ground Truth
     soundfield_1 = util.load_RoomB_soundfield(filepath, 0)
     soundfield_2 = util.load_RoomB_soundfield(filepath, 1)
-
 
     frequencies = util.get_frequencies()
 
@@ -208,8 +211,9 @@ def simulated_data_evaluation(config_path):
     print('Loaded configuration from: %s' % config_path)
 
     session_dir = config_path[:config_path.rfind('/')+1]
-
+    
     checkpoint_path = get_latest_checkpoint_path(session_dir)
+    
     if not checkpoint_path:  # Model weights are loaded when creating the model object
         print('Error: No checkpoint found in same directory as configuration file.')
         return
@@ -219,14 +223,18 @@ def simulated_data_evaluation(config_path):
     evaluation_path = os.path.join(session_dir, 'simulated_data_evaluation', 'min_mics_' + str(config['evaluation']['min_mics']) +
                                   '_max_mics_' + str(config['evaluation']['max_mics']) + '_step_mics_' +
                                   str(config['evaluation']['step_mics']))
+    
     if not os.path.exists(evaluation_path): os.makedirs(evaluation_path)
 
-    test_path = os.path.join(config['dataset']['path'], 'simulated_soundfields', 'test')
+    #test_path = os.path.join(config['dataset']['path'], 'simulated_soundfields', 'test') #changed
+    
+    test_path = '/nas/home/fronchini/complex-sound-field/dataset/test_set'
     filenames = get_test_filenames(test_path)
 
     frequencies = util.get_frequencies()
 
     for num_file, filename in enumerate(sorted(filenames)):
+       # ipdb.set_trace()
         print('\nEvaluating model in simulated room ' + str(num_file) + '...\n')
         aux_sound = util.load_soundfield(os.path.join(test_path, filename), frequencies)
         results_dict = get_results_dict()

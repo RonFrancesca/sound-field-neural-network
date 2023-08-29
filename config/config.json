@@ -6,11 +6,11 @@
         "ySamples": 32
     },
     "training": {
-        "batch_size": 4,
-        "num_epochs": 500,
-        "num_steps_val": 2000,
-        "num_steps_train": 5000,
-        "session_id": 1,
+        "batch_size": 32,
+        "num_epochs": 400,
+        "num_steps_val": 40,
+        "num_steps_train": 118,
+        "session_id": 4,
         "lr": 0.0001,
         "loss": {
             "valid_weight": 1,

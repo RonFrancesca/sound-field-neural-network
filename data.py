@@ -10,6 +10,8 @@ import collections
 import cv2
 from keras.preprocessing.image import ImageDataGenerator
 from random import randint, seed
+import ipdb
+import random
 
 class Dataset():
 
@@ -36,17 +38,36 @@ class Dataset():
         """ Load Dataset. """
 
         print('\nLoading Simulated Sound Field Dataset...')
+        
+        full_dataset_path = '/nas/home/fronchini/complex-sound-field/dataset'
+        filenames = [filename for filename in os.listdir(full_dataset_path) if filename.endswith('.mat')]
+        #train_set, val_set = train_test_split(filenames, test_size=0.25, random_state=42)
+        percentage = 25
+
+        # Calculate the number of elements to select
+        num_elements_to_select = int(len(filenames) * (percentage / 100.0))
+
+        # Randomly select elements from the original list
+        val_set = random.sample(filenames, num_elements_to_select)
+
+        # Create another list with the remaining elements
+        train_set = [item for item in filenames if item not in val_set]
+        
         for set in ['train', 'val']:
-            current_directory = os.path.join(self.path, 'simulated_soundfields', set)
+            if set == 'train':
+                #current_directory = os.path.join(full_dataset_path, 'simulated_soundfields', set)
+                soundfields, file_paths = self.load_directory(full_dataset_path, train_set)
+            else: 
+                soundfields, file_paths = self.load_directory(full_dataset_path, val_set)
 
-            soundfields, file_paths = self.load_directory(current_directory)
-
+            #soundfields, file_paths = self.load_directory(current_directory)
+            
             self.file_paths[set] = file_paths
             self.soundfields[set] = soundfields
 
         return self
 
-    def load_directory(self, directory_path):
+    def load_directory(self, directory_path, filenames):
         """ Load directory.
 
 	    Args:
@@ -55,8 +76,8 @@ class Dataset():
 	    Returns: list, list
 
 	    """
-
-        filenames = [filename for filename in os.listdir(directory_path) if filename.endswith('.mat')]
+        #filenames = [filename for filename in os.listdir(directory_path) if filename.endswith('.mat')]
+        #directory_path
 
         file_paths = []
         soundfields = []
@@ -67,7 +88,6 @@ class Dataset():
             file_paths.append(filepath)
             soundfield = util.load_soundfield(filepath, self.freq)
             soundfields.append(soundfield)
-
         return soundfields, file_paths
 
 
@@ -163,12 +183,14 @@ class MaskGenerator():
             seed(rand_seed)
             np.random.seed(rand_seed)
 
-    def _generate_mask(self):
+    def _generate_mask(self, num_mics):
         """Generates a random irregular mask.
 
         Returns: np.ndarray
 
-        """
+        """   
+        self.num_mics = num_mics
+        
         if self.num_mics:
             mask_slice = np.zeros((self.height*self.width), np.uint8)
 
@@ -208,9 +230,14 @@ class MaskGenerator():
                 cv2.ellipse(mask_slice, (x1,y1), (s1,s2), a1, a2, a3,(1,1,1), thickness)
 
         mask_slice = 1-mask_slice
-
         mask = np.repeat(mask_slice, self.channels, axis=2)
-
+        
+        # fig = plt.figure(figsize=(30, 10))
+        # plt.subplot(131)
+        # plt.imshow(mask[1], aspect='auto')
+        # plt.tight_layout()
+        # plt.save("/nas/home/fronchini/sound-field-neural-network/mask.png")
+        
         return mask
 
     def sample(self, random_seed=None):
@@ -223,5 +250,11 @@ class MaskGenerator():
         if random_seed:
             seed(random_seed)
         else:
-            return self._generate_mask()
+            # list with numbe of microphones we want to test
+            num_mics_list = [5, 15, 35, 55]
+            # pick one random value to generate masks
+            num_mics = random.choice(num_mics_list)
+            #print(f"Mask generated using n_mics: {num_mics}")
+            
+            return self._generate_mask(num_mics)
 

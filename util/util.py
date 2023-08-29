@@ -1,6 +1,5 @@
 # Sound field reconstruction in rooms: inpainting meets superresolution - 17.12.2019
 # Util.py
-
 import json
 import os
 import scipy.io
@@ -17,9 +16,19 @@ from keras.utils import conv_utils
 from keras import backend as K
 from keras.engine import InputSpec
 from keras.layers import Conv2D, Conv1D
+import ipdb
 
 
 """ Saving/loading/checking files from disk """
+dir = "/nas/home/fronchini/sound-field-neural-network/figures"
+
+def plot(data_to_plot, name_of_data_to_plot):   
+    plt.figure(figsize=(30, 10))
+    #plt.subplot(1, 2, 1)
+    plt.imshow(np.real((data_to_plot[:, :, 20])), aspect='auto')
+    plt.colorbar()
+    plt.tight_layout()
+    plt.savefig(os.path.join(dir, name_of_data_to_plot))
 
 def load_config(config_filepath):
     """ Load a session configuration from a JSON-formatted file.
@@ -141,8 +150,9 @@ def preprocessing(factor, sf, mask):
     scaled_sf = scale(masked_sf)
 
     # Upsampling scaled sound field and mask
-    irregular_sf, mask = upsampling(factor, scaled_sf, mask)
-
+    irregular_sf, mask = upsampling(factor, scaled_sf, mask) #irregular_sf shape [32, 32, 40], #mask shape [32, 32, 40]
+    
+    
     return irregular_sf, mask
 
 
@@ -169,7 +179,7 @@ def apply_mask(input_sfs, masks):
         Returns: np.ndarray
 
         """
-
+    
     masked_sfs = []
     for sf, mk in zip(input_sfs, masks):
         aux_sf = copy.deepcopy(sf)
@@ -213,9 +223,10 @@ def upsampling(up_factor, input_sfs, masks):
         Returns: np.ndarray, np.ndarray
 
         """
-
+    
     batch_sf_up = []
     batch_mask_up = []
+    
 
     for sf, mask in zip(input_sfs, masks): #for each sample in the batch size
         sf_up = []
@@ -223,13 +234,14 @@ def upsampling(up_factor, input_sfs, masks):
         sf = np.swapaxes(sf, 2, 0)
         mask = np.swapaxes(mask, 2, 0)
         for sf_slice in sf:
+            #.set_trace()
             positions = np.repeat(range(1, sf_slice.shape[1]), up_factor-1) #positions in sf slice to put 1
             sf_slice_up = np.insert(sf_slice, obj=positions,values=np.ones(len(positions)), axis=1)
             sf_slice_up = np.transpose(np.insert(np.transpose(sf_slice_up),obj=positions,values=np.ones(len(positions)), axis=1))
             sf_slice_up = np.pad(sf_slice_up, (0,up_factor-1),  mode='constant', constant_values=1)
             sf_slice_up = np.roll(sf_slice_up, (up_factor-1)//2, axis=0)
             sf_slice_up = np.roll(sf_slice_up, (up_factor-1)//2, axis=1)
-            sf_up.append(sf_slice_up)
+            sf_up.append(sf_slice_up) # for the 40 frequencies (len(sf_up = 40)), sf_slice_up shape (32, 32)
 
         mask_slice = mask[0, :, :]
         positions = np.repeat(range(1, mask_slice.shape[1]), up_factor-1) #positions in mask slice to put 0
@@ -239,17 +251,28 @@ def upsampling(up_factor, input_sfs, masks):
         mask_slice_up = np.roll(mask_slice_up, (up_factor-1)//2, axis=0)
         mask_slice_up = np.roll(mask_slice_up, (up_factor-1)//2, axis=1)
         mask_slice_up = mask_slice_up[np.newaxis, :]
-        mask_up = np.repeat(mask_slice_up, mask.shape[0], axis=0)
+        mask_up = np.repeat(mask_slice_up, mask.shape[0], axis=0) #mask_slice_up (1, 32, 32), mask_up (40, 32, 32)
 
-
+        
         batch_sf_up.append(sf_up)
         batch_mask_up.append(mask_up)
 
+    
     batch_sf_up = np.asarray(batch_sf_up)
-    batch_sf_up = np.swapaxes(batch_sf_up, 3, 1)
+    batch_sf_up = np.swapaxes(batch_sf_up, 3, 1) # shape [4, 32, 32, 40]
 
     batch_mask_up = np.asarray(batch_mask_up)
-    batch_mask_up = np.swapaxes(batch_mask_up, 3, 1)
+    batch_mask_up = np.swapaxes(batch_mask_up, 3, 1) # shape [4, 32, 32, 40]
+    
+    #ipdb.set_trace()
+    #tmp = batch_sf_up[1, :, :, 20]
+    
+    # fig1 = plt.figure(figsize=(30, 10))
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(tmp, aspect='auto')
+    # plt.colorbar()
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(dir, "sf_up"))
 
     return batch_sf_up, batch_mask_up
 
@@ -399,8 +422,16 @@ def analyze_and_plot_real_results(results_filepath, config):
                 nmse.append(defin['NMSE'].values)
                 ssim.append(defin['SSIM'].values)
 
+            #nmse 
             nmse = np.asarray(nmse)
+            # save the numpy file for the misure for a mic
+            nmse_file_path = os.path.join(results_filepath, f'nmse_lluis_{num_mics}.npy')
+            np.save(nmse_file_path, nmse, allow_pickle=False)
+            
+            # ssim
             ssim = np.asarray(ssim)
+            ssim_file_path = os.path.join(results_filepath, f'ssim_lluis_{num_mics}.npy')
+            np.save(ssim_file_path, ssim, allow_pickle=False)
 
             #plot nmse mic results given all combinations
             label = str(num_mics)
@@ -457,8 +488,18 @@ def analyze_and_plot_simulated_results(evaluation_path, session_dir, config):
                 results['SSIM'][num_mics].append(defin['SSIM'].values)
 
     for num_mics in range(config['evaluation']['min_mics'], config['evaluation']['max_mics'], config['evaluation']['step_mics']):
+        
         nmse = np.asarray(results['NMSE'][num_mics])
+        # save nmse
+        nmse_file_path = os.path.join(evaluation_path, f'nmse_lluis_{num_mics}.npy')
+        np.save(nmse_file_path, nmse, allow_pickle=False)
+        print(f"File {f'nmse_lluis_{num_mics}.npy'} saved in {nmse_file_path}")
+        
         ssim = np.asarray(results['SSIM'][num_mics])
+        #save ssim
+        ssim_file_path = os.path.join(evaluation_path, f'ssim_lluis_{num_mics}.npy')
+        np.save(ssim_file_path, ssim, allow_pickle=False)
+        print(f"File {f'ssim_lluis_{num_mics}.npy'} saved in {ssim_file_path}")
 
         #plot nmse mic results given all combinations
         label = str(num_mics)
@@ -507,6 +548,8 @@ def plot_mean_and_CI(axes, mean, lb, ub, label, freqs, linestyle='-'):
         """
 
     axes.fill_between(freqs, ub, lb, alpha=.25)
+    #ipdb.set_trace()
+    mean = 10*np.log10(mean) # It was not done the db calculation
     axes.plot(freqs, mean, label=label, marker = 'o', linestyle=linestyle)
 
     return axes
@@ -534,7 +577,8 @@ def pretty_plot(axes, metric_name, plot_path, source=None):
     axes.grid(True,which="both",ls="--",c='gray')
     axes.set_xlabel('Frequency', fontsize=30)
     axes.set_ylabel(metric_name, fontsize=30)
-    axes.set_ylim(0, 1)
+    if metric_name != 'NMSE':
+        axes.set_ylim(0, 1)
     if source != None:
         axes.set_title(metric_name + ' at source position ' + str(source), fontsize=30)
         filename = metric_name + '_at_source_position_' + str(source) + ".svg"
@@ -595,6 +639,7 @@ class PConv2D(Conv2D):
         if input_shape[0][channel_axis] is None:
             raise ValueError('The channel dimension of the inputs should be defined. Found `None`.')
 
+        
         self.input_dim = input_shape[0][channel_axis]
 
         # Sound field kernel

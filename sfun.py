@@ -16,6 +16,7 @@ from keras.layers.merge import Concatenate
 from keras import backend as K
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.metrics import mean_absolute_error
+import ipdb
 
 class SFUN(object):
 
@@ -126,8 +127,9 @@ class SFUN(object):
         outputs = Conv2D(self.num_freq, 1, activation = 'sigmoid', name='outputs_sf')(d_conv8)
 
         # Setup the model inputs / outputs
+        
         model = Model(inputs=[inputs_sf, inputs_mask], outputs=outputs)
-
+    
         return model, inputs_mask
 
     def compile_sfun(self, model, inputs_mask, lr):

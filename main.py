@@ -6,6 +6,7 @@ import training
 import inference
 
 
+
 def main():
     """ Reads command line arguments and starts either training or evaluation. """
 
