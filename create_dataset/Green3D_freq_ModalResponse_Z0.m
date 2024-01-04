@@ -1,4 +1,4 @@
-function [Psi_r, Mu, Psi_s] = Green3D_freq_ModalResponse_Z0(FreqLim)
+function [Psi_r, Mu, Psi_s] = Green3D_freq_ModalResponse_Z0(FreqLim, T60)
 % Green's function for a lightly damped rectangular room.
 % Determines the response in the frequency domain for the settings defined
 % in the global struct 'Setup'. Assumes uniform distribution of absorption
@@ -37,7 +37,7 @@ function [Psi_r, Mu, Psi_s] = Green3D_freq_ModalResponse_Z0(FreqLim)
 %                       excitation frequency
 %                       (size = [nMod,nFreq])
 %
-% Author: Martin Møller
+% Author: Martin Mï¿½ller
 % Original version 2017-04-06
 % Revision: 
 
@@ -47,8 +47,10 @@ global Setup
 % Determine absorption coefficient from Sabine's equation
 V = prod(Setup.Room.Dim);
 S = 2*(prod(Setup.Room.Dim(1:2)) + prod(Setup.Room.Dim(2:3)) + prod(Setup.Room.Dim([1,3])));
-% Absorption coefficient
-alpha = 24*log(10)/Setup.Ambient.c * V/(S*Setup.Room.ReverbTime);
+% Absorption coefficient - previous line commented
+% alpha = 24*log(10)/Setup.Ambient.c * V/(S*Setup.Room.ReverbTime);
+
+alpha = 24*log(10)/Setup.Ambient.c * V/(S*T60);
 % Normalized specific wall admittance (beta = rho*c*Y)
 beta = 1/8*alpha;
 % Determine the time-constants of the different eigenfunctions types based 
